@@ -1,16 +1,20 @@
-# HMS PDF Studio — prototype 0.1
+# HMS PDF Studio v1.0 — GitHub Pages
 
-Arabic-first PWA prototype for Android and Windows. Features: load PDF, merge PDF files, delete full pages, overlay English text, visually cover a rectangular region, and export edited PDF. All user PDF bytes are processed in the browser.
+Upload **all files from this folder** into the root of the existing `hms-pdf-studio` repository. Replace files with matching names, and delete old unused files if desired. GitHub Settings > Pages > Deploy from branch > main / root. The site should be served over HTTPS.
 
-## Run
+## Features
+- PDF compression: image-based page reconstruction with multiple quality passes and a target-size attempt (not guaranteed).
+- Merge PDF files in the listed order.
+- Organize: reorder, delete and rotate pages.
+- Edit: add text (including browser-supported Arabic rendering) and cover selected rectangles. Saving **rasterizes all pages**, discarding original text layers and interactive content. This is **not certified secure redaction**. Do not rely on it for legal or security-sensitive redaction.
+- Download edited PDF; input is not uploaded to a server.
 
-From this directory: `python -m http.server 8000`, then open `http://localhost:8000` in Chrome or Edge. An internet connection is required on first launch to load pdf-lib from jsDelivr. Later launches can work offline if the browser successfully caches that library. For installing on Android, deploy to HTTPS or run on a trusted local origin.
+## Limitations
+- PDF.js and pdf-lib are loaded from third-party CDNs. First launch requires Internet. Offline operation may work after these resources have been cached by the service worker, but is not guaranteed on all browsers or after cache eviction.
+- PDFs with password protection, unusual encodings, or very large scans may fail or exhaust mobile memory.
+- Compression and editing rasterize text; original searchable text, links, forms, and annotations are not preserved.
+- The page organizer's thumbnails are schematic after loading; page ordering uses original source indices.
+- Arabic text depends on browser fonts; PDF output is rasterized.
+- No tests on actual Android devices were performed in this environment.
 
-## Limitations / safety
-
-- **White rectangles are NOT secure redaction.** Underlying content may remain extractable. Do not use this feature to remove confidential data.
-- Adding Arabic text and true PDF content editing are not implemented.
-- PDF compression is not yet implemented; it requires a suitable compression engine and testing.
-- The page picker lists page numbers and sizes, not rendered previews.
-- The pdf-lib library is currently loaded from a CDN and therefore this package is not fully self-contained for first launch.
-- No uploaded personal PDF files were used for testing.
+For stronger offline guarantees, vendor audited local copies of the two JS libraries and worker, and test on both devices.

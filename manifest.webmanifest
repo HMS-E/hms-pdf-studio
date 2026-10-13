@@ -1,1 +1,1 @@
-{"name":"HMS PDF Studio","short_name":"HMS PDF","start_url":"./index.html","display":"standalone","background_color":"#f1f5f9","theme_color":"#15243a","icons":[{"src":"icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}]}
+{"name":"HMS PDF Studio","short_name":"HMS PDF","start_url":"./","scope":"./","display":"standalone","background_color":"#f4f7fc","theme_color":"#111e35","icons":[{"src":"icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}]}
