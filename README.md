@@ -1,7 +1,12 @@
-# HMS PDF Studio v1.4
+# HMS PDF Studio v1.5 — Hybrid PDF to Word
 
-New: PDF → DOCX in selectable-text and page-image modes; DOCX → PDF in paragraph-reconstruction mode, with high/low raster quality choices. Both conversions run in the browser.
+GitHub Pages ready: upload the contents of this folder to the repository root.
 
-Limitations: scanned PDF needs OCR for editable text; Word to PDF does not preserve complex formatting and does not handle image-only DOCX. Office layouts are not guaranteed. This release depends on existing CDN libraries at first load.
+**Conversion modes:**
+- Editable text: extracts selectable text into DOCX paragraphs; layout/images may be lost.
+- Exact visual pages: embeds rendered PDF pages as JPEG images in DOCX; not editable.
+- Hybrid: embeds each page image, followed by extracted text from that page as editable paragraphs. **This does not recreate the original editable layout.**
 
-Upload all files at the repository root (index.html must be at root). Do not upload any personal PDFs.
+The conversion runs in the browser. Libraries are loaded from public CDNs on first use; offline behavior is not guaranteed. Scanned PDFs need OCR, which is not implemented. Test with synthetic files; do not upload private documents to GitHub.
+
+Other PDF tools from v1.4 are retained. No real-device end-to-end test has been performed.
