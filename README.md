@@ -1,1 +1,7 @@
-HMS PDF Studio v1.3 — Fixed visible language buttons on Android and desktop. Upload ALL extracted files to repository root, replacing old versions. GitHub Pages: main / (root). If old version remains, close installed PWA and open website in a fresh Chrome tab. PDF functions remain experimental; no certified redaction.
+# HMS PDF Studio v1.4
+
+New: PDF → DOCX in selectable-text and page-image modes; DOCX → PDF in paragraph-reconstruction mode, with high/low raster quality choices. Both conversions run in the browser.
+
+Limitations: scanned PDF needs OCR for editable text; Word to PDF does not preserve complex formatting and does not handle image-only DOCX. Office layouts are not guaranteed. This release depends on existing CDN libraries at first load.
+
+Upload all files at the repository root (index.html must be at root). Do not upload any personal PDFs.

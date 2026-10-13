@@ -8,3 +8,5 @@
 /* v1.3: always-visible language selector on Android */
 .mobile-language-bar{display:none}
 @media(max-width:760px){.mobile-language-bar{display:flex;position:relative;z-index:20;align-items:center;justify-content:space-between;gap:8px;background:#0c1b34;color:#fff;padding:12px 14px;font-size:13px;font-weight:700}.mobile-lang-buttons{display:flex;gap:6px;direction:ltr}.mobile-lang-buttons button{border:1px solid #6680a6;border-radius:10px;padding:10px 13px;background:#223d65;color:white;font-size:14px;font-weight:700}.mobile-lang-buttons button.selected{background:#3d82fa;border-color:#91b7ff}.header-actions .language-switch{display:none}header{align-items:flex-start}.header-actions .pill{display:none}}
+
+.word-file{display:block;margin:14px 0;padding:12px;border:1px dashed #9baecb;border-radius:10px}.word-file input{display:block;width:100%;margin-top:8px}#convertPanel hr{border:0;border-top:1px solid #c9d3e3;margin:24px 0}
