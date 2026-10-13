@@ -1,0 +1,11 @@
+HMS PDF Studio — GitHub Pages deployment from Android
+
+1. Open github.com and sign in.
+2. Create a PUBLIC repository named hms-pdf-studio.
+3. Extract this ZIP on your phone (Files app).
+4. Open repository > Add file > Upload files; upload the extracted files directly to repository root (not inside a subfolder). Chrome Desktop site may help.
+5. Open Settings > Pages > Build and deployment > Deploy from a branch > main > /(root) > Save.
+6. Wait for deployment, then open https://YOUR_USERNAME.github.io/hms-pdf-studio/
+7. In Chrome Android: menu > Add to Home screen / Install app.
+
+The site is public, so only upload application source files, NEVER personal PDF documents. PDF content is processed in your browser. First run requires internet to fetch pdf-lib. PDF compression and secure redaction are NOT implemented in v0.1. White rectangle overlay is NOT secure deletion.
