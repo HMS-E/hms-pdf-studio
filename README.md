@@ -1,7 +1,3 @@
-# HMS PDF Studio v1.1
+HMS PDF Studio v1.2 — Arabic / English
 
-Added Arabic/English language switch, editor zoom, rectangle replace-with-text, and PDF to JPG ZIP export.
-
-**Important limitations:** Replacement paints over a selected rectangle and inserts new text; it does not edit original PDF text objects. Saving edits rasterizes the document and loses searchable text. Removing areas is not certified secure redaction. DOCX/XLSX/PPTX conversion is not implemented. PDF compression target is best-effort and rasterizes pages. First load requires internet to fetch external JS libraries; offline operation is not guaranteed.
-
-Upload the extracted files to the root of the existing GitHub Pages repository, replacing older files. Test using synthetic documents only.
+Upload all extracted files to the root of your existing GitHub Pages repository, replacing old files. Use the prominent العربية / English buttons in the header. Language selection persists on the device. PDF processing functionality is inherited from v1.1 and is not newly validated on Android. PDF libraries load from CDNs on first run; offline availability is not guaranteed.
