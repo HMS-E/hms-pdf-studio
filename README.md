@@ -1,3 +1,1 @@
-HMS PDF Studio v1.2 — Arabic / English
-
-Upload all extracted files to the root of your existing GitHub Pages repository, replacing old files. Use the prominent العربية / English buttons in the header. Language selection persists on the device. PDF processing functionality is inherited from v1.1 and is not newly validated on Android. PDF libraries load from CDNs on first run; offline availability is not guaranteed.
+HMS PDF Studio v1.3 — Fixed visible language buttons on Android and desktop. Upload ALL extracted files to repository root, replacing old versions. GitHub Pages: main / (root). If old version remains, close installed PWA and open website in a fresh Chrome tab. PDF functions remain experimental; no certified redaction.
