@@ -26,3 +26,13 @@ Replace the repository-root files with this package (or copy only the changed fi
 - In Convert PDF, choose PNG (lossless) or JPG (98% quality), and 200 or 300 DPI.
 - Export all pages or a range such as `1-3,5`. One page downloads as an image; multiple pages as a ZIP of numbered images.
 - This export does not alter the source PDF. Large PDFs at 300 DPI can exceed mobile memory.
+
+
+## v1.8 — Desktop Print Quality
+- Export PDF pages as PNG or JPG at 150 / 300 / 600 / 900 / 1200 DPI.
+- The same DPI selection applies to image-only PDF and PDF-to-DOCX exports.
+- A4 / Letter / original PDF page size selection for PDF and DOCX outputs; aspect ratio is preserved.
+- Memory safety threshold 512 MB / 1 GB / 2 GB per rendered page; processing remains sequential.
+- PNG is lossless, but rasterization cannot improve the quality of a low-resolution source.
+- At 1200 DPI, a single A4 RGBA canvas may consume ~530 MB before PDF.js/browser overhead; a desktop browser may still run out of memory.
+- Note: PNG and JPG exports do not reliably encode physical DPI metadata; use the stated pixel dimensions and set A4 paper size when printing.

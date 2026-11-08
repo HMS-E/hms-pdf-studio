@@ -1,4 +1,4 @@
-/* HMS PDF Studio v1.6 — high quality, image-based document conversions.
+/* HMS PDF Studio v1.8 — high quality, image-based document conversions.
    Each PDF page is rasterized on the device, one at a time.  No OCR or upload. */
 (() => {
   'use strict';
@@ -25,8 +25,21 @@
   }
 
   function choice() {
-    const dpi = $('imageQuality').value === '300' ? 300 : 200;
-    return {dpi, type: dpi === 300 ? 'png' : 'jpeg', quality: 0.95};
+    const dpi = Number($('imageQuality').value) || 600;
+    return {dpi, type:'png', quality:0.98};
+  }
+
+  function printDimensions(points) {
+    const mode = $('printPageSize').value;
+    if (mode === 'a4') return {width:595.276, height:841.89};
+    if (mode === 'letter') return {width:612, height:792};
+    return {width:points.width, height:points.height};
+  }
+
+  function fitInside(pageW,pageH,imageW,imageH) {
+    const scale=Math.min(pageW/imageW,pageH/imageH);
+    const width=imageW*scale, height=imageH*scale;
+    return {x:(pageW-width)/2,y:(pageH-height)/2,width,height};
   }
 
   async function openPdf() {
@@ -40,11 +53,17 @@
     return {pdf: await pdfjsLib.getDocument({data}).promise, file};
   }
 
+  function canvasSizeInvalid(vp) {
+    return vp.width > 32767 || vp.height > 32767 || vp.width < 1 || vp.height < 1;
+  }
+
   async function renderAsImage(page, preset) {
     const vp = page.getViewport({scale: preset.dpi / 72});
     const pixelCount = Math.ceil(vp.width) * Math.ceil(vp.height);
-    if (pixelCount > 23000000) {
-      throw Error('الصفحة كبيرة جداً لهذا الإعداد. جرّب High Quality 200 DPI. / Page too large; use 200 DPI.');
+    const limitMB = Number($('maxImageMemory').value) || 512;
+    const maxPixels = Math.floor(limitMB * 1048576 / 4);
+    if (!Number.isFinite(pixelCount) || pixelCount > maxPixels || canvasSizeInvalid(vp)) {
+      throw Error(`هذه الصفحة تحتاج تقريباً ${Math.ceil(pixelCount*4/1048576)} MB للصورة الخام عند ${preset.dpi} DPI. خفّض الجودة أو ارفع حد الذاكرة إذا كان جهازك يسمح. / Page exceeds the selected memory limit.`);
     }
     const canvas = document.createElement('canvas');
     canvas.width = Math.max(1, Math.ceil(vp.width));
@@ -101,8 +120,9 @@
       const embedded = image.type === 'png'
         ? await output.embedPng(image.bytes)
         : await output.embedJpg(image.bytes);
-      const page = output.addPage([image.points.width, image.points.height]);
-      page.drawImage(embedded, {x:0, y:0, width:page.getWidth(), height:page.getHeight()});
+      const dims = printDimensions(image.points);
+      const page = output.addPage([dims.width, dims.height]);
+      page.drawImage(embedded, fitInside(dims.width,dims.height,image.points.width,image.points.height));
     });
     const bytes = new Uint8Array(await output.save({useObjectStreams:true}));
     download(bytes, 'HMS_Image_Based_High_Quality.pdf', 'application/pdf');
@@ -126,12 +146,13 @@
     const {pdf} = await openPdf();
     const first = (await pdf.getPage(1)).getViewport({scale:1});
     // Word applies page dimensions per section. Use first-page size and fit other pages inside it.
-    const pageW = Math.round(first.width * 20);
-    const pageH = Math.round(first.height * 20);
+    const dims=printDimensions(first);
+    const pageW = Math.round(dims.width * 20);
+    const pageH = Math.round(dims.height * 20);
     const marginHorizontal = 500; // 25 PDF points
     const marginVertical = 700;   // 35 PDF points
-    const widthAvailable = Math.max(100, first.width - 2 * marginHorizontal / 20);
-    const heightAvailable = Math.max(100, first.height - 2 * marginVertical / 20 - 5);
+    const widthAvailable = Math.max(100, dims.width - 2 * marginHorizontal / 20);
+    const heightAvailable = Math.max(100, dims.height - 2 * marginVertical / 20 - 5);
 
     const zip = new JSZip();
     zip.file('[Content_Types].xml', XML_HEADER +
@@ -224,9 +245,8 @@
       const bytes = new Uint8Array(await zip.file(path).async('uint8array'));
       const image = /\.png$/i.test(path) ? await result.embedPng(bytes) : await result.embedJpg(bytes);
       const p = result.addPage([W, H]);
-      const scale = Math.min(W / image.width, H / image.height);
-      const width = image.width * scale, height = image.height * scale;
-      p.drawImage(image, {x:(W-width)/2, y:(H-height)/2, width, height});
+      const fitted=fitInside(W,H,image.width,image.height);
+      p.drawImage(image, fitted);
       await sleepFrame();
     }
     const bytes = new Uint8Array(await result.save());

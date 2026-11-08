@@ -1,9 +1,9 @@
 /* Network-first application cache; external PDF libraries may need internet. */
-const CACHE = 'hms-pdf-studio-v1-7';
+const CACHE = 'hms-pdf-studio-v1-8';
 const LOCAL = [
-  './', './index.html', './style.css?v=17', './app.js?v=17',
-  './enhancements.js?v=17', './language.js?v=17',
-  './word-conversion.js?v=17', './icon.svg', './manifest.webmanifest'
+  './', './index.html', './style.css?v=18', './app.js?v=18',
+  './enhancements.js?v=18', './language.js?v=18',
+  './word-conversion.js?v=18', './icon.svg', './manifest.webmanifest'
 ];
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(LOCAL)).then(() => self.skipWaiting()));
