@@ -1,3 +1,43 @@
-(()=>{'use strict';const $=id=>document.getElementById(id);let zoom=1;const wrap=document.querySelector('.previewwrap'),canvas=$('preview');function setZoom(z){zoom=Math.max(.5,Math.min(3,z));canvas.style.width=(zoom*100)+'%';canvas.style.maxWidth='none';$('zoomValue').textContent=Math.round(zoom*100)+'%'}$('zoomIn').onclick=()=>setZoom(zoom+.25);$('zoomOut').onclick=()=>setZoom(zoom-.25);$('zoomReset').onclick=()=>setZoom(1);setZoom(1);
-$('exportImages').onclick=async()=>{try{const input=$('files').files[0];if(!input)throw Error('Choose a PDF first');if(!window.pdfjsLib||!window.JSZip)throw Error('Libraries unavailable');pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';const pdf=await pdfjsLib.getDocument({data:new Uint8Array(await input.arrayBuffer())}).promise;const zip=new JSZip();$('status').textContent='Exporting…';for(let i=1;i<=pdf.numPages;i++){const page=await pdf.getPage(i),vp=page.getViewport({scale:1.5}),c=document.createElement('canvas');c.width=Math.round(vp.width);c.height=Math.round(vp.height);await page.render({canvasContext:c.getContext('2d'),viewport:vp}).promise;const base64=c.toDataURL('image/jpeg',.85).split(',')[1];zip.file('page-'+String(i).padStart(3,'0')+'.jpg',base64,{base64:true});c.width=c.height=1;$('status').textContent='Page '+i+'/'+pdf.numPages}const blob=await zip.generateAsync({type:'blob'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='HMS_PDF_Images.zip';a.click();setTimeout(()=>URL.revokeObjectURL(url),60000);$('status').textContent='Completed'}catch(e){alert(e.message||e);$('status').textContent='Error'}};
+/* HMS PDF Studio enhancements v1.6: preview zoom + high quality ZIP images */
+(() => {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  let zoom = 1;
+  const canvas = $('preview');
+  function setZoom(value) {
+    zoom = Math.max(0.5, Math.min(3, value));
+    canvas.style.width = `${zoom * 100}%`;
+    canvas.style.maxWidth = 'none';
+    $('zoomValue').textContent = `${Math.round(zoom * 100)}%`;
+  }
+  $('zoomIn').onclick = () => setZoom(zoom + 0.25);
+  $('zoomOut').onclick = () => setZoom(zoom - 0.25);
+  $('zoomReset').onclick = () => setZoom(1);
+  setZoom(1);
+
+  $('exportImages').onclick = async () => {
+    const button = $('exportImages');
+    if (button.disabled) return;
+    button.disabled = true;
+    try {
+      if (!window.JSZip || !window.HMSImageMode) throw Error('Required PDF/image libraries are unavailable');
+      const {pdf} = await HMSImageMode.openPdf();
+      const zip = new JSZip();
+      const quality = HMSImageMode.choice();
+      await HMSImageMode.pageImages(pdf, async (image, page) => {
+        const ext = image.type === 'png' ? 'png' : 'jpg';
+        zip.file(`page-${String(page).padStart(4, '0')}.${ext}`, image.bytes);
+      });
+      $('status').textContent = 'Creating ZIP…';
+      const blob = await zip.generateAsync({type:'blob', compression:'DEFLATE'});
+      HMSImageMode.download(blob, `HMS_PDF_Images_${quality.dpi}DPI.zip`, 'application/zip');
+      $('status').textContent = 'Completed / اكتمل';
+    } catch(err) {
+      console.error(err);
+      $('status').textContent = 'Error / خطأ';
+      alert(err.message || String(err));
+    } finally {
+      button.disabled = false;
+    }
+  };
 })();

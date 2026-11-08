@@ -1,1 +1,264 @@
-(()=>{'use strict';const $=id=>document.getElementById(id);const esc=s=>String(s).replace(/[<>&"']/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&apos;'}[c]));const dl=(data,name,type)=>{const u=URL.createObjectURL(new Blob([data],{type}));const a=document.createElement('a');a.href=u;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),60000)};const note=(s)=>{$('status').textContent=s};const getPdf=async()=>{const f=$('files').files[0];if(!f||!f.name.toLowerCase().endsWith('.pdf'))throw Error('Select a PDF in the main file picker first / اختر PDF أولاً');pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';return pdfjsLib.getDocument({data:new Uint8Array(await f.arrayBuffer())}).promise};const b64=async blob=>new Uint8Array(await blob.arrayBuffer());async function makeDocx(paragraphs,images,hybridTexts=null){const zip=new JSZip();zip.file('[Content_Types].xml',`<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Default Extension="jpeg" ContentType="image/jpeg"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>`);zip.file('_rels/.rels',`<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>`);let body='',rels=`<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">`;if(images){for(let i=0;i<images.length;i++){const im=images[i];zip.file(`word/media/image${i+1}.jpeg`,im.bytes);rels+=`<Relationship Id="rId${i+1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/image${i+1}.jpeg"/>`;const cx=Math.round(im.width/im.height*7200000),cy=7200000;body+=`<w:p><w:r><w:drawing><wp:inline xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"><wp:extent cx="${cx}" cy="${cy}"/><wp:docPr id="${i+1}" name="Page ${i+1}"/><a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:nvPicPr><pic:cNvPr id="${i+1}" name="Page ${i+1}"/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" r:embed="rId${i+1}"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill><pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${cx}" cy="${cy}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r></w:p>`;if(hybridTexts){body+='<w:p><w:r><w:t>Editable text extracted from page '+(i+1)+':</w:t></w:r></w:p>';for(const t of (hybridTexts[i]||[]))body+=`<w:p><w:r><w:t xml:space="preserve">${esc(t)}</w:t></w:r></w:p>`}if(i<images.length-1)body+='<w:p><w:r><w:br w:type="page"/></w:r></w:p>'}}else{for(const p of paragraphs){body+=`<w:p><w:r><w:t xml:space="preserve">${esc(p)}</w:t></w:r></w:p>`}}rels+='</Relationships>';zip.file('word/_rels/document.xml.rels',rels);zip.file('word/document.xml',`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>${body}<w:sectPr><w:pgSz w:w="12240" w:h="15840"/><w:pgMar w:top="720" w:right="720" w:bottom="720" w:left="720"/></w:sectPr></w:body></w:document>`);return zip.generateAsync({type:'uint8array',compression:'DEFLATE'})}async function pdfToWord(mode){const pdf=await getPdf(),pars=[],images=[],hybridTexts=[];for(let i=1;i<=pdf.numPages;i++){note(`Page ${i}/${pdf.numPages}`);const page=await pdf.getPage(i);if(mode==='text'){const content=await page.getTextContent();let line='',prevY=null;for(const item of content.items){if(!('str'in item))continue;const y=item.transform?.[5];if(prevY!==null&&Math.abs(y-prevY)>3){if(line.trim())pars.push(line.trim());line=''}line+=item.str+(item.hasEOL?'\n':' ');prevY=y}if(line.trim())pars.push(line.trim());if(i<pdf.numPages)pars.push('')}else{if(mode==='hybrid'){const content=await page.getTextContent();hybridTexts.push(content.items.filter(x=>typeof x.str==='string'&&x.str.trim()).map(x=>x.str));}const vp=page.getViewport({scale:1.5}),c=document.createElement('canvas');c.width=Math.ceil(vp.width);c.height=Math.ceil(vp.height);await page.render({canvasContext:c.getContext('2d',{alpha:false}),viewport:vp}).promise;const blob=await new Promise(r=>c.toBlob(r,'image/jpeg',.86));images.push({bytes:await b64(blob),width:c.width,height:c.height});c.width=c.height=1}}const out=await makeDocx(pars,mode==='text'?null:images,mode==='hybrid'?hybridTexts:null);dl(out,'HMS_Converted.docx','application/vnd.openxmlformats-officedocument.wordprocessingml.document')}async function wordToPdf(mode){const file=$('wordInput').files[0];if(!file)throw Error('Choose a DOCX file / اختر ملف وورد');const zip=await JSZip.loadAsync(await file.arrayBuffer()),entry=zip.file('word/document.xml');if(!entry)throw Error('Invalid DOCX');const xml=new DOMParser().parseFromString(await entry.async('string'),'application/xml');const ns='http://schemas.openxmlformats.org/wordprocessingml/2006/main';const paras=Array.from(xml.getElementsByTagNameNS(ns,'p')).map(p=>Array.from(p.getElementsByTagNameNS(ns,'t')).map(t=>t.textContent).join(''));if(!paras.some(x=>x.trim()))throw Error('No extractable paragraphs. Image-only Word documents are not supported for reverse conversion yet.');const out=await PDFLib.PDFDocument.create();const W=595,H=842,margin=42;let canvas=document.createElement('canvas');canvas.width=1190;canvas.height=1684;let ctx=canvas.getContext('2d');let y=84;const font=31;const lineH=47;function newCanvas(){canvas=document.createElement('canvas');canvas.width=1190;canvas.height=1684;ctx=canvas.getContext('2d');ctx.fillStyle='white';ctx.fillRect(0,0,1190,1684);ctx.font=`${font}px Arial, sans-serif`;ctx.fillStyle='#111827';ctx.textBaseline='top';y=84}async function flush(){const jpg=await out.embedJpg(canvas.toDataURL('image/jpeg',mode==='image'?.83:.94));const p=out.addPage([W,H]);p.drawImage(jpg,{x:0,y:0,width:W,height:H})}newCanvas();for(const para of paras){let line='';const words=para.split(/\s+/);for(const word of words){const next=line?line+' '+word:word;if(ctx.measureText(next).width>1030&&line){if(y>1550){await flush();newCanvas()}ctx.fillText(line,84,y);y+=lineH;line=word}else line=next}if(y>1550){await flush();newCanvas()}ctx.fillText(line,84,y);y+=lineH+10}await flush();dl(await out.save(),'HMS_Converted.pdf','application/pdf')}const update=()=>{$('wordInput').closest('label').style.display=$('wordDirection').value==='docx-pdf'?'block':'none';$('files').accept=$('wordDirection').value==='pdf-docx'?'.pdf,application/pdf':'.pdf,application/pdf'};$('wordDirection').addEventListener('change',update);update();$('wordConvertBtn').onclick=async()=>{const btn=$('wordConvertBtn');try{if(!window.JSZip||!window.PDFLib||!window.pdfjsLib)throw Error('Libraries unavailable. Connect to internet for initial load.');btn.disabled=true;note('Converting…');const mode=$('wordMode').value;if($('wordDirection').value==='pdf-docx')await pdfToWord(mode);else await wordToPdf(mode);note('Completed')}catch(e){console.error(e);note('Error');alert(e.message||e)}finally{btn.disabled=false}}})();
+/* HMS PDF Studio v1.6 — high quality, image-based document conversions.
+   Each PDF page is rasterized on the device, one at a time.  No OCR or upload. */
+(() => {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const DOCX_TYPE = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+  const REL_NS = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
+  const WORD_NS = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
+  const DRAW_NS = 'http://schemas.openxmlformats.org/drawingml/2006/main';
+  const XML_HEADER = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
+
+  const status = text => { $('status').textContent = text; };
+  const xmlEscape = x => String(x).replace(/[&<>"']/g, c => ({'&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&apos;'}[c]));
+  const sleepFrame = () => new Promise(resolve => setTimeout(resolve, 0));
+
+  function download(data, name, type) {
+    const url = URL.createObjectURL(new Blob([data], {type}));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = name;
+    document.body.append(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 120000);
+  }
+
+  function choice() {
+    const dpi = $('imageQuality').value === '300' ? 300 : 200;
+    return {dpi, type: dpi === 300 ? 'png' : 'jpeg', quality: 0.95};
+  }
+
+  async function openPdf() {
+    const file = $('files').files[0];
+    if (!file || !/\.pdf$/i.test(file.name)) {
+      throw Error('اختر ملف PDF من مربع رفع الملفات أولاً / Choose a PDF first.');
+    }
+    if (!window.pdfjsLib) throw Error('PDF.js was not loaded. Check your internet connection.');
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    const data = new Uint8Array(await file.arrayBuffer());
+    return {pdf: await pdfjsLib.getDocument({data}).promise, file};
+  }
+
+  async function renderAsImage(page, preset) {
+    const vp = page.getViewport({scale: preset.dpi / 72});
+    const pixelCount = Math.ceil(vp.width) * Math.ceil(vp.height);
+    if (pixelCount > 23000000) {
+      throw Error('الصفحة كبيرة جداً لهذا الإعداد. جرّب High Quality 200 DPI. / Page too large; use 200 DPI.');
+    }
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.ceil(vp.width));
+    canvas.height = Math.max(1, Math.ceil(vp.height));
+    try {
+      const ctx = canvas.getContext('2d', {alpha: false});
+      if (!ctx) throw Error('Canvas unavailable');
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      await page.render({canvasContext: ctx, viewport: vp, background: 'rgb(255,255,255)'}).promise;
+      const mime = preset.type === 'png' ? 'image/png' : 'image/jpeg';
+      const blob = await new Promise((resolve, reject) => canvas.toBlob(
+        result => result ? resolve(result) : reject(Error('Image export failed')), mime, preset.quality
+      ));
+      return {
+        bytes: new Uint8Array(await blob.arrayBuffer()),
+        type: preset.type,
+        width: canvas.width,
+        height: canvas.height,
+        points: page.getViewport({scale: 1})
+      };
+    } finally {
+      canvas.width = 0;
+      canvas.height = 0;
+      if (page.cleanup) page.cleanup();
+    }
+  }
+
+  async function pageImages(pdf, callback) {
+    const preset = choice();
+    for (let i = 1; i <= pdf.numPages; i++) {
+      status(`Processing ${i} / ${pdf.numPages} · ${preset.dpi} DPI`);
+      const page = await pdf.getPage(i);
+      const image = await renderAsImage(page, preset);
+      await callback(image, i, pdf.numPages);
+      await sleepFrame(); // Keep Android's UI responsive between pages.
+    }
+  }
+
+  function displayResult(name, bytes, label) {
+    const result = $('result');
+    result.classList.remove('hidden');
+    result.replaceChildren();
+    const msg = document.createElement('strong');
+    msg.textContent = `${label}: ${name} (${(bytes.length / 1048576).toFixed(2)} MB)`;
+    result.append(msg);
+  }
+
+  async function imagePdf() {
+    if (!window.PDFLib) throw Error('pdf-lib is unavailable');
+    const {pdf} = await openPdf();
+    const output = await PDFLib.PDFDocument.create();
+    await pageImages(pdf, async image => {
+      const embedded = image.type === 'png'
+        ? await output.embedPng(image.bytes)
+        : await output.embedJpg(image.bytes);
+      const page = output.addPage([image.points.width, image.points.height]);
+      page.drawImage(embedded, {x:0, y:0, width:page.getWidth(), height:page.getHeight()});
+    });
+    const bytes = new Uint8Array(await output.save({useObjectStreams:true}));
+    download(bytes, 'HMS_Image_Based_High_Quality.pdf', 'application/pdf');
+    displayResult('HMS_Image_Based_High_Quality.pdf', bytes, 'Image-based PDF ready');
+  }
+
+  function pictureXml(n, relationship, cx, cy) {
+    return `<w:p><w:pPr>${n > 1 ? '<w:pageBreakBefore/>' : ''}<w:spacing w:before="0" w:after="0"/><w:jc w:val="center"/></w:pPr>` +
+      `<w:r><w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0">` +
+      `<wp:extent cx="${cx}" cy="${cy}"/><wp:docPr id="${n}" name="PDF Page ${n}"/>` +
+      `<a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture">` +
+      `<pic:pic><pic:nvPicPr><pic:cNvPr id="${n}" name="Page ${n}"/><pic:cNvPicPr/></pic:nvPicPr>` +
+      `<pic:blipFill><a:blip r:embed="${relationship}"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill>` +
+      `<pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${cx}" cy="${cy}"/></a:xfrm>` +
+      `<a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr>` +
+      `</pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r></w:p>`;
+  }
+
+  async function pdfToWord() {
+    if (!window.JSZip) throw Error('JSZip was not loaded');
+    const {pdf} = await openPdf();
+    const first = (await pdf.getPage(1)).getViewport({scale:1});
+    // Word applies page dimensions per section. Use first-page size and fit other pages inside it.
+    const pageW = Math.round(first.width * 20);
+    const pageH = Math.round(first.height * 20);
+    const marginHorizontal = 500; // 25 PDF points
+    const marginVertical = 700;   // 35 PDF points
+    const widthAvailable = Math.max(100, first.width - 2 * marginHorizontal / 20);
+    const heightAvailable = Math.max(100, first.height - 2 * marginVertical / 20 - 5);
+
+    const zip = new JSZip();
+    zip.file('[Content_Types].xml', XML_HEADER +
+      '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
+      '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>' +
+      '<Default Extension="xml" ContentType="application/xml"/>' +
+      '<Default Extension="jpeg" ContentType="image/jpeg"/>' +
+      '<Default Extension="jpg" ContentType="image/jpeg"/>' +
+      '<Default Extension="png" ContentType="image/png"/>' +
+      '<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>' +
+      '</Types>');
+    zip.file('_rels/.rels', XML_HEADER +
+      '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+      '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>' +
+      '</Relationships>');
+
+    const body = [];
+    const rels = [];
+    await pageImages(pdf, async (image, i) => {
+      const ext = image.type === 'png' ? 'png' : 'jpg';
+      const fileName = `page-${String(i).padStart(4, '0')}.${ext}`;
+      const rel = `rId${i}`;
+      zip.file(`word/media/${fileName}`, image.bytes);
+      rels.push(`<Relationship Id="${rel}" Type="${REL_NS}/image" Target="media/${fileName}"/>`);
+      const ratio = Math.min(widthAvailable / image.points.width, heightAvailable / image.points.height);
+      const cx = Math.round(image.points.width * ratio * 12700);
+      const cy = Math.round(image.points.height * ratio * 12700);
+      body.push(pictureXml(i, rel, cx, cy));
+    });
+
+    zip.file('word/_rels/document.xml.rels', XML_HEADER +
+      '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+      rels.join('') + '</Relationships>');
+    zip.file('word/document.xml', XML_HEADER +
+      `<w:document xmlns:w="${WORD_NS}" xmlns:r="${REL_NS}" ` +
+      'xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" ' +
+      `xmlns:a="${DRAW_NS}" xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture">` +
+      `<w:body>${body.join('')}<w:sectPr><w:pgSz w:w="${pageW}" w:h="${pageH}"/>` +
+      `<w:pgMar w:top="${marginVertical}" w:right="${marginHorizontal}" ` +
+      `w:bottom="${marginVertical}" w:left="${marginHorizontal}" w:header="0" w:footer="0" w:gutter="0"/>` +
+      '</w:sectPr></w:body></w:document>');
+    const bytes = new Uint8Array(await zip.generateAsync({type:'uint8array', compression:'DEFLATE'}));
+    download(bytes, 'HMS_PDF_Pages_As_Images.docx', DOCX_TYPE);
+    displayResult('HMS_PDF_Pages_As_Images.docx', bytes, 'Image-only Word ready');
+  }
+
+  async function wordToPdf() {
+    // This is a faithful round-trip for image-only DOCX files generated by HMS.
+    // It cannot faithfully render arbitrary Word layouts: browsers lack MS Word's layout engine.
+    if (!window.JSZip || !window.PDFLib) throw Error('Required libraries are unavailable');
+    const input = $('wordInput').files[0];
+    if (!input) throw Error('اختر ملف Word أولاً / Choose a Word file first.');
+    const zip = await JSZip.loadAsync(await input.arrayBuffer());
+    const xmlFile = zip.file('word/document.xml');
+    if (!xmlFile) throw Error('Invalid DOCX file');
+    const parse = text => {
+      const doc = new DOMParser().parseFromString(text, 'application/xml');
+      if (doc.getElementsByTagName('parsererror').length) throw Error('Invalid Word XML');
+      return doc;
+    };
+    const xml = parse(await xmlFile.async('string'));
+    const relationshipFile = zip.file('word/_rels/document.xml.rels');
+    if (!relationshipFile) throw Error('This Word file does not contain image relationships.');
+    const relDoc = parse(await relationshipFile.async('string'));
+    const relMap = new Map();
+    for (const rel of Array.from(relDoc.getElementsByTagName('Relationship'))) {
+      const target = rel.getAttribute('Target') || '';
+      if (/^media\/[\w.\-]+\.(png|jpe?g)$/i.test(target)) relMap.set(rel.getAttribute('Id'), 'word/' + target);
+    }
+    const nonImageText = Array.from(xml.getElementsByTagNameNS(WORD_NS, 't'))
+      .some(node => node.textContent.trim());
+    if (nonImageText) {
+      throw Error('This Word file contains text. Converting it as images here would lose content. Use an image-only DOCX generated by HMS.');
+    }
+    const blips = Array.from(xml.getElementsByTagNameNS(DRAW_NS, 'blip'));
+    if (!blips.length) {
+      throw Error('This DOCX has no embedded page images. Image-only Word → PDF supports documents with page images.');
+    }
+    const result = await PDFLib.PDFDocument.create();
+    const pageSize = xml.getElementsByTagNameNS(WORD_NS, 'pgSz')[0];
+    const pageW = pageSize ? Number(pageSize.getAttributeNS(WORD_NS, 'w')) / 20 : 595.28;
+    const pageH = pageSize ? Number(pageSize.getAttributeNS(WORD_NS, 'h')) / 20 : 841.89;
+    const W = pageW > 150 && pageW < 2500 ? pageW : 595.28;
+    const H = pageH > 150 && pageH < 2500 ? pageH : 841.89;
+    for (let i = 0; i < blips.length; i++) {
+      status(`Processing Word image ${i + 1} / ${blips.length}`);
+      const relationship = blips[i].getAttributeNS(REL_NS, 'embed');
+      const path = relMap.get(relationship);
+      if (!path || !zip.file(path)) throw Error(`Missing embedded Word image ${i + 1}`);
+      const bytes = new Uint8Array(await zip.file(path).async('uint8array'));
+      const image = /\.png$/i.test(path) ? await result.embedPng(bytes) : await result.embedJpg(bytes);
+      const p = result.addPage([W, H]);
+      const scale = Math.min(W / image.width, H / image.height);
+      const width = image.width * scale, height = image.height * scale;
+      p.drawImage(image, {x:(W-width)/2, y:(H-height)/2, width, height});
+      await sleepFrame();
+    }
+    const bytes = new Uint8Array(await result.save());
+    download(bytes, 'HMS_Word_Images_To_PDF.pdf', 'application/pdf');
+    displayResult('HMS_Word_Images_To_PDF.pdf', bytes, 'Image-based PDF ready');
+  }
+
+  function directionUI() {
+    const toWord = $('wordDirection').value === 'pdf-docx';
+    $('wordInput').closest('label').style.display = toWord ? 'none' : 'block';
+    $('saveImagePdfBtn').style.display = toWord ? 'inline-block' : 'none';
+    $('wordHint').textContent = toWord
+      ? 'Every PDF page becomes a high-quality image INSIDE the DOCX. Text is not editable or selectable. / كل صفحة تصبح صورة داخل Word، والنص غير قابل للتعديل.'
+      : 'Image-only DOCX files (including those created here) can be turned back into image-based PDF. Complex Word layouts are not supported. / يدعم ملفات Word المكونة من صور الصفحات.';
+  }
+
+  async function run(button, job) {
+    if (button.disabled) return;
+    button.disabled = true;
+    $('result').classList.add('hidden');
+    try { await job(); status('Completed / اكتمل'); }
+    catch (err) { console.error(err); status('Error / خطأ'); alert(err.message || String(err)); }
+    finally { button.disabled = false; }
+  }
+
+  $('wordMode').value = 'image';
+  $('wordDirection').addEventListener('change', directionUI);
+  directionUI();
+  $('wordConvertBtn').onclick = () => run($('wordConvertBtn'),
+    $('wordDirection').value === 'pdf-docx' ? pdfToWord : wordToPdf);
+  $('saveImagePdfBtn').onclick = () => run($('saveImagePdfBtn'), imagePdf);
+
+  // Reuse the same image quality and rasterizing path for the existing ZIP export tool.
+  window.HMSImageMode = {openPdf, renderAsImage, choice, pageImages, download};
+})();

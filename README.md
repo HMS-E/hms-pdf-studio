@@ -1,12 +1,23 @@
-# HMS PDF Studio v1.5 — Hybrid PDF to Word
+# HMS PDF Studio v1.6 — High-Quality Image Documents
 
-GitHub Pages ready: upload the contents of this folder to the repository root.
+Built from the v1.5 project. Upload these files to the **root** of the existing `HMS-E/hms-pdf-studio` GitHub repository. This keeps the same GitHub Pages URL.
 
-**Conversion modes:**
-- Editable text: extracts selectable text into DOCX paragraphs; layout/images may be lost.
-- Exact visual pages: embeds rendered PDF pages as JPEG images in DOCX; not editable.
-- Hybrid: embeds each page image, followed by extracted text from that page as editable paragraphs. **This does not recreate the original editable layout.**
+## What changed
 
-The conversion runs in the browser. Libraries are loaded from public CDNs on first use; offline behavior is not guaranteed. Scanned PDFs need OCR, which is not implemented. Test with synthetic files; do not upload private documents to GitHub.
+- **Save PDF as image-based PDF:** Each original page is rendered into an image and embedded back into a PDF page at its original dimensions. Original text, interactive elements, hyperlinks, and forms are removed by rasterization.
+- **PDF → Word (.docx):** Each PDF page becomes one embedded JPEG/PNG image in the Word document, on its own page. No OCR; text is **not** editable or selectable.
+- **Word → PDF:** Supports image-only DOCX documents, including Word files made by this version. This is **not** a general-purpose, layout-faithful converter for arbitrary DOCX files.
+- **Export PDF pages to ZIP:** Uses the same quality preset, and outputs numbered JPG/PNG images.
+- **Quality:** `High` 200 DPI / JPEG 95%, or `Ultra` 300 DPI / lossless PNG. Ultra produces larger documents and needs more device memory.
+- Existing compression, PDF merging, page organizing, and PDF editing code is retained unchanged.
 
-Other PDF tools from v1.4 are retained. No real-device end-to-end test has been performed.
+## Limitations
+
+- The PDF → DOCX converter sets the Word page size based on the **first** PDF page; later pages with different sizes are fitted proportionally.
+- PDFs with huge pages may exceed a phone's available canvas/memory. Switch to the 200 DPI setting if 300 DPI fails.
+- The app uses browser-based JS from public CDNs; first load requires internet and reliable offline operation is not guaranteed. Conversion data stays in the browser, not sent to a server by this code.
+- This release has had JavaScript syntax and static checks; run real-device/browser checks before relying on important documents.
+
+## Deploy on GitHub Pages
+
+Replace the repository-root files with this package (or copy only the changed files: `index.html`, `word-conversion.js`, `enhancements.js`, `sw.js`, `README.md`). GitHub Pages then serves the updated site after deployment. Refresh the browser or clear the previous page cache if necessary.
