@@ -1,4 +1,4 @@
-# HMS PDF Studio v1.6 — High-Quality Image Documents
+# HMS PDF Studio v1.7 — High-Quality Image Documents
 
 Built from the v1.5 project. Upload these files to the **root** of the existing `HMS-E/hms-pdf-studio` GitHub repository. This keeps the same GitHub Pages URL.
 
@@ -21,3 +21,8 @@ Built from the v1.5 project. Upload these files to the **root** of the existing 
 ## Deploy on GitHub Pages
 
 Replace the repository-root files with this package (or copy only the changed files: `index.html`, `word-conversion.js`, `enhancements.js`, `sw.js`, `README.md`). GitHub Pages then serves the updated site after deployment. Refresh the browser or clear the previous page cache if necessary.
+
+## v1.7: Save PDF pages as images
+- In Convert PDF, choose PNG (lossless) or JPG (98% quality), and 200 or 300 DPI.
+- Export all pages or a range such as `1-3,5`. One page downloads as an image; multiple pages as a ZIP of numbered images.
+- This export does not alter the source PDF. Large PDFs at 300 DPI can exceed mobile memory.
