@@ -36,3 +36,6 @@ Replace the repository-root files with this package (or copy only the changed fi
 - PNG is lossless, but rasterization cannot improve the quality of a low-resolution source.
 - At 1200 DPI, a single A4 RGBA canvas may consume ~530 MB before PDF.js/browser overhead; a desktop browser may still run out of memory.
 - Note: PNG and JPG exports do not reliably encode physical DPI metadata; use the stated pixel dimensions and set A4 paper size when printing.
+
+## v1.9
+Images to PDF: PNG/JPEG, ordering, A4/Letter/original at 300 DPI, orientation and margins.
