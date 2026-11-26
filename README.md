@@ -39,3 +39,6 @@ Replace the repository-root files with this package (or copy only the changed fi
 
 ## v1.9
 Images to PDF: PNG/JPEG, ordering, A4/Letter/original at 300 DPI, orientation and margins.
+
+## v2.0 — Advanced PDF Editor
+Open the Advanced PDF Editor link in the Studio sidebar. Load a PDF, select a networking symbol or shape, then click the page. Import PNG/JPEG, add Arabic/English text, move and resize marks, rotate, duplicate, draw, undo/redo and zoom. Save creates a separate PDF. Original pages are retained; added artwork is embedded as PNG (300/600 DPI nominal, bounded by canvas limits) or as the original PNG/JPEG. Text added by this editor is artwork, not selectable PDF text. White cover is NOT secure redaction; original content remains recoverable. Encrypted PDFs are not supported. Digital signatures may be invalidated. Libraries load from the existing CDN URLs and require internet on first use; document processing is local.
